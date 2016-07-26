@@ -4,7 +4,7 @@
 // from TTree tree/tree
 // found on file: WJetsToQQ_HT-600ToInf.root
 //////////////////////////////////////////////////////////
-
+//#include "BTagCalibrationStandalone.cpp"
 #include <TROOT.h>
 #include <TChain.h>
 #include <TFile.h>
@@ -21,7 +21,7 @@
 
 
 
-const double intlumi = 7600;
+const double intlumi = 12900;
 int iPeriod = 4;    // 1=7TeV, 2=8TeV, 3=7+8TeV, 7=7+8+13TeV
 int iPos =0;
 
@@ -86,7 +86,7 @@ void readZgamma_Validation2() {
     
     writeExtraText = true;       // if extra text
     extraText  = "Preliminary";  // default extra text is "Preliminary"
-    lumi_13TeV  = "7.6 fb^{-1} (2016)"; // default is "19.7 fb^{-1}"
+    lumi_13TeV  = "12.9 fb^{-1} (2016)"; // default is "19.7 fb^{-1}"
 
     
     // Fixed size dimensions of array or collections stored in the TTree if any.
@@ -734,7 +734,7 @@ void readZgamma_Validation2() {
         "Wljets.root", //18
         "ttjets.root", //19
         "ttgjets.root", //20
-        "data_77.root" //21
+        "data_13.root" //21
     };
     
     
@@ -788,10 +788,10 @@ void readZgamma_Validation2() {
         11
     };
     
-    TFile* puwFile = new TFile("puWeights_7fb.root");
+    TFile* puwFile = new TFile("puw_2016_13fb_200.root");
     TH1D* puw = (TH1D*)puwFile->Get("puw");
     
-    /*TFile* kFactFile = new TFile("uncertainties_EWK_24bins.root");
+    TFile* kFactFile = new TFile("uncertainties_EWK_24bins.root");
     TH1F* kfactHist[3][3];
     kfactHist[0][0] = (TH1F*)kFactFile->Get("GJets_LO/inv_pt_G");
     kfactHist[1][0] = (TH1F*)kFactFile->Get("WJets_LO/inv_pt");
@@ -818,7 +818,7 @@ void readZgamma_Validation2() {
         //kfactHist[i][2]->Fit("expo","","",200,1000);
         
         //kfactHist[i][2]->Write();
-    }*/
+    }
     //kFactFile2->Close();
     //return;
     
@@ -833,6 +833,29 @@ void readZgamma_Validation2() {
     TH2F* kfactHistLocal3 = (TH2F*)newFile3->Get("distribs2d_11");
     
     TH1D* _hCounter = new TH1D("hCounter", "Events counter", 5,0,5);
+
+    BTagCalibration * calib = new BTagCalibration("csvv2","CSVv2.csv");
+    BTagCalibrationReader * readerM = new BTagCalibrationReader(BTagEntry::OP_MEDIUM, "central");//
+
+    /*BTagCalibrationReader* reader2 = new BTagCalibrationReader(//calib,     // calibration instance
+                                                               BTagEntry::OP_MEDIUM,  // operating point
+                                                               "comb",               // measurement type
+                                                               "central");//
+*/
+    BTagCalibrationReader * readerL = new BTagCalibrationReader(//calib,     // calibration instance
+                                                              BTagEntry::OP_LOOSE,  // operating point
+                                                              //"mujets",               // measurement type
+                                                              "central");//
+
+  /*  BTagCalibrationReader* reader4 = new BTagCalibrationReader(//calib,     // calibration instance
+                                                               BTagEntry::OP_LOOSE,  // operating point
+                                                               "comb",               // measurement type
+                                                              "central");*/
+    TFile* btagFile = new TFile("bTagEff.root");
+    TH2D* btagEffs2D[4][6];
+    double trigBins[14] = {0,20,40,60,80,100,140,180,260,400,800,1200,1600,2000
+    };
+    double etaBins[6] = {0,0.5,1.0,1.5,2.0,2.5};	
 
     TFile* hfile[nFiles];
     TTree* inputTreeFake[nFiles];
@@ -1130,8 +1153,8 @@ void readZgamma_Validation2() {
                 if (ph_pt->at(i) < 200.) continue;
                 if (!ph_passEleVeto->at(i)) continue;
                 if (fabs(ph_superCluster_eta->at(i)) > 1.4442 && fabs(ph_superCluster_eta->at(i)) < 1.566) continue;
-                //if (fabs(ph_eta->at(i)) > 2.4) continue;
-                if (fabs(ph_eta->at(i)) > 1.4442) continue;
+                if (fabs(ph_eta->at(i)) > 2.4) continue;
+                //if (fabs(ph_eta->at(i)) > 1.4442) continue;
                 //if (fabs(ph_superCluster_eta->at(i)) < 1.4442 && ph_mvaVal->at(i) < 0.374) continue;
                 //if (fabs(ph_superCluster_eta->at(i)) > 1.566 && ph_mvaVal->at(i) < 0.336) continue;
                 
@@ -1181,7 +1204,7 @@ void readZgamma_Validation2() {
                 }*/
                 if (kSam >= iSM && kSam < iSM+4) {
                     //_weight = _weight* kfactHist[0][2]->GetBinContent(kfactHist[0][2]->FindBin(genParticle_pt->at(phIndMC)));
-                    //_weight = _weight* kfactHist[0][2]->GetBinContent(kfactHist[0][2]->FindBin(ph_pt->at(phInd)));
+                   // _weight = _weight* kfactHist[0][2]->GetBinContent(kfactHist[0][2]->FindBin(ph_pt->at(phInd)));
                     //_weight = _weight* kfactHistLocal->GetBinContent(kfactHistLocal->FindBin(ph_pt->at(phInd)));
 
                     //_weight = _weight*func->Eval(genParticle_pt->at(phIndMC));
@@ -1192,13 +1215,13 @@ void readZgamma_Validation2() {
             for (int i=0; i!=jetAK8_N; ++i) {
                 if (!jetAK8_IDTightLepVeto->at(i)) continue;
                 if (jetAK8_pt->at(i) < 200.) continue;
-                //if (jetAK8_pruned_massCorr->at(i) < 30.) continue;	
+                if (jetAK8_pruned_massCorr->at(i) < 30.) continue;	
                 //build CR 
-                if (jetAK8_pruned_massCorr->at(i) > 70. || jetAK8_pruned_massCorr->at(i)<50.) continue; 
+                //if (jetAK8_pruned_massCorr->at(i) > 70. || jetAK8_pruned_massCorr->at(i)<50.) continue; 
                 //if (jetAK8_pruned_massCorr->at(i) < 75.) continue;
                 //if (jetAK8_pruned_massCorr->at(i) > 105.) continue;
-                if (fabs(jetAK8_eta->at(i)) > 2.0) continue;
-                //if (fabs(jetAK8_eta->at(i)) > 2.4) continue;
+                //if (fabs(jetAK8_eta->at(i)) > 2.0) continue;
+                if (fabs(jetAK8_eta->at(i)) > 2.4) continue;
                 jP4.SetPtEtaPhiE(jetAK8_pt->at(i),jetAK8_eta->at(i),jetAK8_phi->at(i),jetAK8_e->at(i));
                 if (jP4.DeltaR(phP4) < 1.1) continue;
               if (jInd < 0) jInd = i;
@@ -1212,7 +1235,7 @@ void readZgamma_Validation2() {
                 //_weight = _weight* kfactHistLocal->GetBinContent(kfactHistLocal->FindBin(ph_pt->at(phInd)));
                 double sf2d = kfactHistLocal3->GetBinContent(kfactHistLocal3->FindBin(ph_pt->at(phInd), jetAK8_pt->at(jInd)));
                 if (sf2d > 0)
-                   _weight = _weight*sf2d;
+                _weight = _weight*sf2d;
 
 
             }
@@ -1233,13 +1256,24 @@ void readZgamma_Validation2() {
             //jP4b.Boost(-(xP4.BoostVector()));
             double cosThetaStar = std::abs(phP4b.Pz()/phP4b.P());
             
-            if (ph_pt->at(phInd)/massjg < 0.34) continue;
+           // if (ph_pt->at(phInd)/massjg < 0.34) continue;
             
             //if (cosThetaStar > 0.6) continue;
 
             
             double minCsv = 0;
             double maxCsv = 0;
+		
+	    double mcTag = 1.;
+            double mcNoTag = 1.;
+            double dataTag = 1.;
+            double dataNoTag = 1.;
+            double errTag = 0.;
+            double errNoTag = 0.;		
+
+	    int imax = -1;
+            int imin = -1;
+	
             if (subjetAK8_pruned_N->at(jInd) >= 2) {
                 for (int i=0; i!=subjetAK8_pruned_N->at(jInd); ++i) {
                     if (subjetAK8_pruned_csv->at(jInd).at(i) > maxCsv) {
@@ -1251,11 +1285,65 @@ void readZgamma_Validation2() {
                         minCsv = subjetAK8_pruned_csv->at(jInd).at(i);
                     }
                 }
+
+
+		if (kSam < nFiles-1 && imax>=0 && imin >=0) {
+                    double JetSF = 1;
+                    double effcy = 1;
+                    effcy = btagEffs2D[2][int(subjetAK8_pruned_hadronFlavour->at(jInd).at(imax))]->GetBinContent(btagEffs2D[2][int(subjetAK8_pruned_hadronFlavour->at(jInd).at(imax))]->FindBin(subjetAK8_pruned_pt->at(jInd).at(imax),fabs(subjetAK8_pruned_eta->at(jInd).at(imax))));
+
+                    if (subjetAK8_pruned_hadronFlavour->at(jInd).at(imax) == 5) {
+			readerM->load(*calib,BTagEntry::FLAV_B,"It");
+                        JetSF = readerM->eval_auto_bounds("central",BTagEntry::FLAV_B, subjetAK8_pruned_eta->at(jInd).at(imax), subjetAK8_pruned_pt->at(jInd).at(imax));
+                    } else if (subjetAK8_pruned_hadronFlavour->at(jInd).at(imax) == 4) {
+			readerM->load(*calib,BTagEntry::FLAV_C,"It");
+                        JetSF = readerM->eval_auto_bounds("central",BTagEntry::FLAV_C, subjetAK8_pruned_eta->at(jInd).at(imax), subjetAK8_pruned_pt->at(jInd).at(imax));
+                    } else {
+			readerM->load(*calib,BTagEntry::FLAV_UDSG,"incl");
+                        JetSF = readerM->eval_auto_bounds("central",BTagEntry::FLAV_UDSG, subjetAK8_pruned_eta->at(jInd).at(imax), subjetAK8_pruned_pt->at(jInd).at(imax));
+                    }
+                    if (maxCsv > 0.8) {
+                        mcTag *= effcy;
+                        dataTag *= effcy*JetSF;
+                    } else {
+                        mcNoTag *= (1- effcy);
+                        dataNoTag *= (1- effcy*JetSF);
+                    }
+                    effcy = btagEffs2D[1][int(subjetAK8_pruned_hadronFlavour->at(jInd).at(imin))]->GetBinContent(btagEffs2D[1][int(subjetAK8_pruned_hadronFlavour->at(jInd).at(imin))]->FindBin(subjetAK8_pruned_pt->at(jInd).at(imin),fabs(subjetAK8_pruned_eta->at(jInd).at(imin))));
+
+                    if (subjetAK8_pruned_hadronFlavour->at(jInd).at(imin) == 5) {
+			readerL->load(*calib,BTagEntry::FLAV_B,"It");	
+                        JetSF = readerL->eval_auto_bounds("central",BTagEntry::FLAV_B, subjetAK8_pruned_eta->at(jInd).at(imin), subjetAK8_pruned_pt->at(jInd).at(imin));
+                    } else if (subjetAK8_pruned_hadronFlavour->at(jInd).at(imin) == 4) {
+			readerL->load(*calib,BTagEntry::FLAV_C,"It");
+                        JetSF = readerL->eval_auto_bounds("central",BTagEntry::FLAV_C, subjetAK8_pruned_eta->at(jInd).at(imin), subjetAK8_pruned_pt->at(jInd).at(imin));
+                    } else {
+			readerL->load(*calib,BTagEntry::FLAV_UDSG,"incl");
+                        JetSF = readerL->eval_auto_bounds("central",BTagEntry::FLAV_UDSG, subjetAK8_pruned_eta->at(jInd).at(imin), subjetAK8_pruned_pt->at(jInd).at(imin));
+                    }
+                    if (minCsv > 0.460) {
+                        mcTag *= effcy;
+                        dataTag *= effcy*JetSF;
+                    } else {
+                        mcNoTag *= (1- effcy);
+                        dataNoTag *= (1- effcy*JetSF);
+                    }
+
+                }
+
+
                 //minCsv = TMath::Min(subjetAK8_pruned_csv->at(jInd).at(0),subjetAK8_pruned_csv->at(jInd).at(1));
                 //maxCsv = TMath::Max(subjetAK8_pruned_csv->at(jInd).at(0),subjetAK8_pruned_csv->at(jInd).at(1));
             }
-            if (!(minCsv < 0.460 || maxCsv < 0.8)) continue;
-
+            //if (!(minCsv < 0.460 || maxCsv < 0.8)) continue;
+            //
+            /*if (kSam < iSM) {
+                double wtbtag = 1;
+                if (mcNoTag * mcTag!=0)
+                    wtbtag = (dataNoTag * dataTag ) / ( mcNoTag * mcTag );
+                _weight = wtbtag*_weight;
+            }
+	    */
             
             distribs[grouping[kSam]][0]->Fill(lheHT, _weight);
             distribs[grouping[kSam]][1]->Fill(TMath::Min(ph_pt->at(phInd), varUp[1]-1), _weight);
